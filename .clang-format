@@ -1,0 +1,34 @@
+# for our beloved clangd users
+BasedOnStyle: Google
+
+NamespaceIndentation: All
+CommentPragmas: "^"
+FixNamespaceComments: false
+ReflowComments: true
+
+SortIncludes: false
+IncludeBlocks: Preserve
+
+BinPackArguments: false
+BinPackParameters: false
+
+BreakConstructorInitializers: AfterColon
+ConstructorInitializerAllOnOneLineOrOnePerLine: true
+ConstructorInitializerIndentWidth: 4
+
+AllowShortIfStatementsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+
+IndentWidth: 4
+ColumnLimit: 0
+IndentAccessModifiers: false
+AccessModifierOffset: -4
+
+BreakBeforeBraces: Attach
+PointerAlignment: Left
+
+AlignAfterOpenBracket: DontAlign
+
+AlwaysBreakAfterReturnType: None
+AlwaysBreakAfterDefinitionReturnType: None
+AlwaysBreakBeforeMultilineStrings: true
