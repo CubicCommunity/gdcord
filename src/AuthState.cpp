@@ -7,10 +7,6 @@
 using namespace gdcord;
 using namespace geode::prelude;
 
-bool AuthState::isLinked() const noexcept {
-    return m_discordLinked;
-};
-
 void AuthState::setDiscordLinkInfo(DiscordLink discord) {
     m_discord = std::move(discord);
     m_discordLinked = !m_discord.id.empty();
@@ -19,6 +15,14 @@ void AuthState::setDiscordLinkInfo(DiscordLink discord) {
 Result<DiscordLink> AuthState::getDiscord() const {
     if (!m_discordLinked) return Err("Discord account not linked");
     return Ok(m_discord);
+};
+
+bool AuthState::isLinkOngoing() const noexcept {
+    return m_linking;
+};
+
+bool AuthState::isLinked() const noexcept {
+    return m_discordLinked;
 };
 
 void AuthState::startLink(LinkCallback&& callback) {
@@ -39,12 +43,46 @@ void AuthState::startLink(LinkCallback&& callback) {
 
                 m_acc = argon::getGameAccountData();
 
+                m_linking = true;
+
                 s->scheduleSelector(schedule_selector(AuthState::checkLinkStatus), this, 2.5f, 0, 0.f, false);
             };
         });
 };
 
+void AuthState::unlink(UnlinkCallback&& callback) {
+    m_linkTask.cancel();
+
+    if (!argon::signedIn()) return m_linkCallback(Err("Player is logged out"));
+
+    async::spawn(
+        argon::startAuth(),
+        [this, cb = std::move(callback)](Result<std::string> res) {
+            auto reqJson = matjson::Value();
+            reqJson["account_id"] = m_acc.accountId;
+            reqJson["user_id"] = m_acc.userId;
+            reqJson["username"] = m_acc.username;
+            reqJson["authtoken"] = m_token;
+
+            auto req = web::WebRequest()
+                           .bodyJSON(reqJson);
+
+            m_unlinkTask.spawn(
+                req.post("https://api.cubicstudios.xyz/breakeode/v1/discord/unlink"),
+                [this, cb = std::move(cb)](web::WebResponse res) {
+                    if (res.error()) return cb(Err(res.errorMessage()));
+
+                    m_discord = DiscordLink();
+                    m_discordLinked = false;
+
+                    cb(Ok());
+                });
+        });
+};
+
 void AuthState::resetLinkState() {
+    m_linking = false;
+
     m_acc = argon::AccountData();
     m_token.clear();
 
@@ -82,7 +120,7 @@ void AuthState::checkLinkStatus(float) {
     auto req = web::WebRequest()
                    .bodyJSON(reqJson);
 
-    async::spawn(
+    m_linkTask.spawn(
         req.post("https://api.cubicstudios.xyz/breakeode/v1/discord/link/check"),
         [this](web::WebResponse res) {
             if (auto s = CCScheduler::get()) {
