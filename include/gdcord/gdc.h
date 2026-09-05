@@ -17,6 +17,7 @@ namespace gdc {
     void getLink(LinkCallback callback);
     void startLink(LinkCallback callback);
 
+    bool isLinkOngoing() noexcept;
     bool isLinked() noexcept;
 
     geode::Result<DiscordLink> getDiscordLink();

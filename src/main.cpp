@@ -30,6 +30,11 @@ matjson::Value matjson::Serialize<gdc::DiscordLink>::toJson(gdc::DiscordLink con
     return obj;
 };
 
+bool gdc::isLinkOngoing() noexcept {
+    if (auto as = gdc::LinkState::get()) return as->isLinkOngoing();
+    return false;
+};
+
 bool gdc::isLinked() noexcept {
     if (auto as = gdc::LinkState::get()) return as->isLinked();
     return false;
