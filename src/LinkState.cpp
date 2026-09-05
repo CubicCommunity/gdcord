@@ -13,16 +13,18 @@ void LinkState::setDiscordLinkInfo(DiscordLink discord) {
 };
 
 Result<DiscordLink> LinkState::getDiscord() const {
+    if (!argon::signedIn()) return Err("User not signed in");
     if (!m_discordLinked) return Err("Discord account not linked");
+
     return Ok(m_discord);
 };
 
 bool LinkState::isLinkOngoing() const noexcept {
-    return m_linking;
+    return argon::signedIn() && m_linking;
 };
 
 bool LinkState::isLinked() const noexcept {
-    return m_discordLinked;
+    return argon::signedIn() && m_discordLinked;
 };
 
 void LinkState::getLink(LinkCallback&& callback) {
@@ -94,6 +96,8 @@ void LinkState::startLink(LinkCallback&& callback) {
 
                     m_linking = true;
 
+                    web::openLinkInBrowser(fmt::format("https://api.cubicstudios.xyz/breakeode/v1/discord/link/auth?state={}", m_linkState));
+
                     s->scheduleSelector(schedule_selector(LinkState::checkLinkStatus), this, 2.5f, 0, 0.f, false);
                 };
             });
@@ -160,8 +164,6 @@ void LinkState::checkLinkStatus(float) {
     };
 
     if (isErr) resetLinkProcess();
-
-    web::openLinkInBrowser(fmt::format("https://api.cubicstudios.xyz/breakeode/v1/discord/link/auth?state={}", m_linkState));
 
     auto reqJson = matjson::Value();
     reqJson["account_id"] = m_acc.accountId;
