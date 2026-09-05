@@ -18,7 +18,9 @@ namespace gdc {
 
         std::string m_linkState;
         asp::Instant m_linkStart;
+
         LinkCallback m_linkCallback;
+        LinkCallback m_linkGetCallback;
 
         argon::AccountData m_acc;
         std::string m_token;

@@ -30,10 +30,10 @@ bool LinkState::isLinked() const noexcept {
 void LinkState::getLink(LinkCallback&& callback) {
     m_linkTask.cancel();
 
-    if (!argon::signedIn()) return m_linkCallback(Err("Player is logged out"));
+    if (!argon::signedIn()) return callback(Err("Player is logged out"));
 
     if (auto gjam = GJAccountManager::sharedState()) {
-        m_linkCallback = std::move(callback);
+        m_linkGetCallback = std::move(callback);
 
         auto req = web::WebRequest()
                        .param("id", gjam->m_accountID);
@@ -58,15 +58,14 @@ void LinkState::getLink(LinkCallback&& callback) {
                 setDiscordLinkInfo(discordRes.unwrap());
 
                 log::info("(gdcord) Authorized as Discord user {}", discordRes.unwrap().username);
-                m_linkCallback(std::move(discordRes));
+                m_linkGetCallback(std::move(discordRes));
                 resetLinkProcess();
             });
     };
 };
 
 void LinkState::startLink(LinkCallback&& callback) {
-    m_linkTask.cancel();
-    m_unlinkTask.cancel();
+    resetLinkProcess();
 
     m_linkCallback = std::move(callback);
 
@@ -105,7 +104,7 @@ void LinkState::startLink(LinkCallback&& callback) {
 };
 
 void LinkState::unlink(UnlinkCallback&& callback) {
-    m_linkTask.cancel();
+    resetLinkProcess();
 
     if (!argon::signedIn()) return m_linkCallback(Err("Player is logged out"));
 
@@ -145,7 +144,9 @@ void LinkState::resetLinkProcess() {
 
     m_linkState.clear();
     m_linkStart = asp::Instant();
+
     m_linkCallback = nullptr;
+    m_linkGetCallback = nullptr;
 };
 
 void LinkState::checkLinkStatus(float) {
