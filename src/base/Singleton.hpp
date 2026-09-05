@@ -1,6 +1,6 @@
 #pragma once
 
-namespace gdcord::base {
+namespace gdc::base {
     template <class T>
     class Singleton {
     protected:

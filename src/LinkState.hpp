@@ -1,13 +1,13 @@
 #pragma once
 
-#include <gdcord/gdcord.h>
+#include <gdcord/gdc.h>
 
 #include <Geode/Geode.hpp>
 
 #include "base/Singleton.hpp"
 
-namespace gdcord {
-    class AuthState final : public base::Singleton<AuthState>, public cocos2d::CCObject {
+namespace gdc {
+    class LinkState final : public base::Singleton<LinkState>, public cocos2d::CCObject {
         using UnlinkCallback = geode::CopyableFunction<void(geode::Result<>)>;
 
     private:
@@ -26,12 +26,13 @@ namespace gdcord {
         geode::async::TaskHolder<geode::utils::web::WebResponse> m_linkTask;
         geode::async::TaskHolder<geode::utils::web::WebResponse> m_unlinkTask;
 
-        void resetLinkState();
+        void resetLinkProcess();
 
     protected:
         void checkLinkStatus(float);
 
     public:
+        void getLink(LinkCallback&& callback);
         void startLink(LinkCallback&& callback);
         void unlink(UnlinkCallback&& callback);
 

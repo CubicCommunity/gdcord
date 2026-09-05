@@ -1,22 +1,27 @@
-#include <gdcord/gdcord.h>
+#include <gdcord/gdc.h>
 
-#include "AuthState.hpp"
+#include "LinkState.hpp"
 
 #include <Geode/Geode.hpp>
 
 using namespace geode::prelude;
 
-bool gdcord::isLinked() noexcept {
-    if (auto as = gdcord::AuthState::get()) return as->isLinked();
+bool gdc::isLinked() noexcept {
+    if (auto as = gdc::LinkState::get()) return as->isLinked();
     return false;
 };
 
-Result<gdcord::DiscordLink> gdcord::getDiscordLink() {
-    if (auto as = gdcord::AuthState::get()) return as->getDiscord();
+Result<gdc::DiscordLink> gdc::getDiscordLink() {
+    if (auto as = gdc::LinkState::get()) return as->getDiscord();
     return Err("Auth state not found");
 };
 
-void gdcord::startLink(gdcord::LinkCallback cb) {
-    if (auto as = gdcord::AuthState::get()) return as->startLink(std::move(cb));
+void gdc::getLink(gdc::LinkCallback cb) {
+    if (auto as = gdc::LinkState::get()) return as->getLink(std::move(cb));
+    return cb(Err("Auth state not found"));
+};
+
+void gdc::startLink(gdc::LinkCallback cb) {
+    if (auto as = gdc::LinkState::get()) return as->startLink(std::move(cb));
     return cb(Err("Auth state not found"));
 };

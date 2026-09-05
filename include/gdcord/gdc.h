@@ -6,7 +6,7 @@
 
 #include <Geode/Result.hpp>
 
-namespace gdcord {
+namespace gdc {
     struct DiscordLink final {
         std::string id;
         std::string username;
@@ -14,6 +14,7 @@ namespace gdcord {
     };
 
     using LinkCallback = geode::Function<void(geode::Result<DiscordLink>)>;
+    void getLink(LinkCallback callback);
     void startLink(LinkCallback callback);
 
     bool isLinked() noexcept;
@@ -22,7 +23,9 @@ namespace gdcord {
 };
 
 template <>
-struct matjson::Serialize<gdcord::DiscordLink> final {
-    static geode::Result<gdcord::DiscordLink> fromJson(matjson::Value const& value);
-    static matjson::Value toJson(gdcord::DiscordLink const& value);
+struct matjson::Serialize<gdc::DiscordLink> final {
+    static geode::Result<gdc::DiscordLink> fromJson(matjson::Value const& value);
+    static matjson::Value toJson(gdc::DiscordLink const& value);
 };
+
+namespace gdcord = gdc;
