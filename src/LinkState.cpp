@@ -30,7 +30,12 @@ bool LinkState::isLinked() const noexcept {
 void LinkState::getLink(LinkCallback&& callback) {
     m_linkTask.cancel();
 
-    if (!argon::signedIn()) return callback(Err("Player is logged out"));
+    if (!argon::signedIn()) {
+        m_discordLinked = false;
+        return callback(Err("Player is logged out"));
+    };
+
+    if (isLinked()) return callback(getDiscord());
 
     if (auto gjam = GJAccountManager::sharedState()) {
         m_linkGetCallback = std::move(callback);
@@ -67,11 +72,14 @@ void LinkState::getLink(LinkCallback&& callback) {
 void LinkState::startLink(LinkCallback&& callback) {
     resetLinkProcess();
 
+    if (!argon::signedIn()) {
+        m_discordLinked = false;
+        return callback(Err("Player is logged out"));
+    };
+
+    if (m_discordLinked) return callback(getDiscord());
+
     m_linkCallback = std::move(callback);
-
-    if (!argon::signedIn()) return m_linkCallback(Err("Player is logged out"));
-
-    if (m_discordLinked) return m_linkCallback(getDiscord());
 
     getLink([this](Result<DiscordLink> res) {
         if (res.isOk()) {
