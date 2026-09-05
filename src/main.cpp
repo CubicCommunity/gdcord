@@ -64,3 +64,18 @@ void gdc::startLinkAsync(gdc::LinkCallback&& cb) {
     if (auto ls = gdc::LinkState::get()) return ls->startLinkAsync(std::move(cb));
     return cb(Err("Auth state not found"));
 };
+
+std::string gdc::DiscordLink::getAvatarInFormat(gdc::DiscordImgFmt format, bool animated) const {
+    std::string ext;
+    ext.reserve(4);
+
+    switch (format) {
+        default: return animated ? fmt::format("{}?animated=true", avatar) : avatar;
+
+        case DiscordImgFmt::PNG: ext = ".png"; break;
+        case DiscordImgFmt::JPEG: ext = ".jpg"; break;
+        case DiscordImgFmt::GIF: ext = ".gif"; break;
+    };
+
+    return fmt::format("{}{}", geode::utils::string::replace(avatar, ".webp", ext), animated ? "?animated=true" : "");
+};
