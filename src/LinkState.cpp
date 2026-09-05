@@ -28,6 +28,8 @@ bool LinkState::isLinked() const noexcept {
 void LinkState::getLink(LinkCallback&& callback) {
     m_linkTask.cancel();
 
+    if (!argon::signedIn()) return m_linkCallback(Err("Player is logged out"));
+
     if (auto gjam = GJAccountManager::sharedState()) {
         m_linkCallback = std::move(callback);
 
