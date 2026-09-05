@@ -7,8 +7,10 @@
 #include "base/Singleton.hpp"
 
 namespace gdc {
-    class LinkState final : public base::Singleton<LinkState>, public cocos2d::CCObject {
-        using UnlinkCallback = geode::CopyableFunction<void(geode::Result<>)>;
+    class LinkState final : public base::Singleton<LinkState> {
+        using UnlinkResult = geode::Result<>;
+        using UnlinkCallback = geode::CopyableFunction<void(UnlinkResult)>;
+        using UnlinkFuture = arc::Future<UnlinkResult>;
 
     private:
         DiscordLink m_discord;
@@ -19,28 +21,31 @@ namespace gdc {
         std::string m_linkState;
         asp::Instant m_linkStart;
 
-        LinkCallback m_linkCallback;
-        LinkCallback m_linkGetCallback;
-
         argon::AccountData m_acc;
         std::string m_token;
 
-        geode::async::TaskHolder<geode::utils::web::WebResponse> m_linkTask;
-        geode::async::TaskHolder<geode::utils::web::WebResponse> m_unlinkTask;
+        geode::utils::web::WebRequest baseRequest() const;
 
-        void resetLinkProcess();
+        std::string getUserAgent() const;
+        std::string getReqMod() const;
 
     protected:
-        void checkLinkStatus(float);
+        void resetLinkProcess();
+
+        LinkFuture checkLinkStatus();
 
     public:
-        void getLink(LinkCallback&& callback);
-        void startLink(LinkCallback&& callback);
-        void unlink(UnlinkCallback&& callback);
+        void getLinkAsync(LinkCallback&& callback);
+        void startLinkAsync(LinkCallback&& callback);
+        void unlinkAsync(UnlinkCallback&& callback);
+
+        LinkFuture getLink();
+        LinkFuture startLink();
+        UnlinkFuture unlink();
 
         void setDiscordLinkInfo(DiscordLink discord);
 
-        geode::Result<DiscordLink> getDiscord() const;
+        LinkResult getDiscord() const;
         bool isLinkOngoing() const noexcept;
         bool isLinked() const noexcept;
     };

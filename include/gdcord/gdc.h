@@ -1,5 +1,7 @@
 #pragma once
 
+#include <fmt/core.h>
+
 #include <argon/argon.hpp>
 
 #include <matjson.hpp>
@@ -13,14 +15,20 @@ namespace gdc {
         std::string avatar;
     };
 
-    using LinkCallback = geode::Function<void(geode::Result<DiscordLink>)>;
-    void getLink(LinkCallback callback);
-    void startLink(LinkCallback callback);
+    using LinkResult = geode::Result<DiscordLink>;
+
+    using LinkFuture = arc::Future<LinkResult>;
+    LinkFuture getLink();
+    LinkFuture startLink();
+
+    using LinkCallback = geode::CopyableFunction<void(LinkResult)>;
+    void getLinkAsync(LinkCallback&& callback);
+    void startLinkAsync(LinkCallback&& callback);
 
     bool isLinkOngoing() noexcept;
     bool isLinked() noexcept;
 
-    geode::Result<DiscordLink> getDiscordLink();
+    LinkResult getDiscordLink();
 };
 
 template <>

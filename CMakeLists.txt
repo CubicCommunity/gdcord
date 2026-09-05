@@ -20,7 +20,7 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE GEODE_MOD_ID="_gdc")
-target_compile_definitions(${PROJECT_NAME} PRIVATE GDC_VERSION=${PROJECT_VERSION})
+target_compile_definitions(${PROJECT_NAME} PRIVATE GDC_VERSION="${PROJECT_VERSION}")
 
 target_link_libraries(${PROJECT_NAME} geode-sdk)
 

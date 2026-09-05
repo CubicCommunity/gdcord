@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Geode/utils/web.hpp>
+
 namespace gdc::base {
     template <class T>
     class Singleton {
