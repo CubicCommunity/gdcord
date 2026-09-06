@@ -4,7 +4,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
-project(gdcord VERSION 1.0.0)
+project(gdcord VERSION 1.0.1)
 
 file(GLOB_RECURSE SOURCES src/*.cpp)
 add_library(${PROJECT_NAME} STATIC ${SOURCES})

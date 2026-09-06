@@ -12,22 +12,35 @@ namespace gdc {
         using UnlinkCallback = geode::CopyableFunction<void(UnlinkResult)>;
         using UnlinkFuture = arc::Future<UnlinkResult>;
 
+        struct DiscordLinkInfo final {
+            DiscordLink discord;
+            bool linked = false;
+        };
+
+        struct LinkAttempt final {
+            std::string linkState;
+            asp::Instant linkStart;
+            argon::AccountData acc;
+            std::string token;
+            bool linking = false;
+        };
+
     private:
-        DiscordLink m_discord;
-        bool m_discordLinked = false;
+        asp::Mutex<DiscordLinkInfo> m_discordLink;
 
-        bool m_linking = false;
+        asp::Mutex<LinkAttempt> m_attempt;
 
-        std::string m_linkState;
-        asp::Instant m_linkStart;
+        geode::async::TaskHolder<LinkResult> m_getTask;
+        geode::async::TaskHolder<LinkResult> m_startTask;
+        geode::async::TaskHolder<UnlinkResult> m_unlinkTask;
 
-        argon::AccountData m_acc;
-        std::string m_token;
+        static geode::utils::web::WebRequest baseRequest();
 
-        geode::utils::web::WebRequest baseRequest() const;
+        static std::string getUserAgent();
+        static std::string getReqMod();
 
-        std::string getUserAgent() const;
-        std::string getReqMod() const;
+        // Call only on main thread
+        static geode::Result<argon::AccountData> verifyLogin();
 
     protected:
         void resetLinkProcess();

@@ -9,13 +9,13 @@
 using namespace gdc;
 using namespace geode::prelude;
 
-web::WebRequest LinkState::baseRequest() const {
+web::WebRequest LinkState::baseRequest() {
     return web::WebRequest()
-        .userAgent(getUserAgent())
+        .userAgent(LinkState::getUserAgent())
         .timeout(std::chrono::seconds(10));
 };
 
-std::string LinkState::getUserAgent() const {  // thx argon owo
+std::string LinkState::getUserAgent() {  // thx argon owo
     if (auto loader = Loader::get()) {
         return fmt::format("gdcord/v{} ({}, Geode {}, GD {})",
             GDC_VERSION,
@@ -27,36 +27,53 @@ std::string LinkState::getUserAgent() const {  // thx argon owo
     return "";
 };
 
-std::string LinkState::getReqMod() const {
+std::string LinkState::getReqMod() {
     if (auto mod = Mod::get()) return fmt::format("{}/{}", mod->getID(), mod->getVersion().toVString());
     return "";
 };
 
+Result<argon::AccountData> LinkState::verifyLogin() {
+    if (auto gjam = GJAccountManager::sharedState()) {
+        if (!argon::signedIn()) {
+            if (auto ls = LinkState::get()) ls->setDiscordLinkInfo(DiscordLink());
+            return Err("User logged out");
+        };
+
+        return Ok(argon::getGameAccountData());
+    };
+
+    return Err("GJAccountManager not found");
+};
+
 void LinkState::setDiscordLinkInfo(DiscordLink discord) {
-    m_discord = std::move(discord);
-    m_discordLinked = !m_discord.id.empty();
+    auto dc = m_discordLink.lock();
+
+    dc->discord = std::move(discord);
+    dc->linked = !dc->discord.id.empty();
 };
 
 gdc::LinkResult LinkState::getDiscord() const {
     if (!argon::signedIn()) return Err("User not signed in");
-    if (!m_discordLinked) return Err("Discord account not linked");
 
-    return Ok(m_discord);
+    auto const dc = m_discordLink.lock();
+    if (!dc->linked) return Err("Discord account not linked");
+
+    return Ok(dc->discord);
 };
 
 bool LinkState::isLinkOngoing() const noexcept {
-    return argon::signedIn() && m_linking;
+    return argon::signedIn() && m_attempt.lock()->linking;
 };
 
 bool LinkState::isLinked() const noexcept {
-    return argon::signedIn() && m_discordLinked;
+    return argon::signedIn() && m_discordLink.lock()->linked;
 };
 
 LinkFuture LinkState::getLink() {
     auto acc = *co_await async::waitForMainThread<Result<int>>([this]() -> Result<int> {
         if (auto gjam = GJAccountManager::sharedState()) {
             if (!argon::signedIn()) {
-                m_discordLinked = false;
+                m_discordLink.lock()->linked = false;
                 return Err("User logged out");
             };
 
@@ -71,7 +88,7 @@ LinkFuture LinkState::getLink() {
 
     auto accountID = std::move(acc).unwrap();
 
-    auto req = baseRequest()
+    auto req = LinkState::baseRequest()
                    .param("id", accountID);
 
     auto res = co_await req.get("https://api.cubicstudios.xyz/breakeode/v1/discord");
@@ -92,7 +109,9 @@ LinkFuture LinkState::getLink() {
 };
 
 void LinkState::getLinkAsync(LinkCallback&& callback) {
-    async::spawn(
+    m_getTask.cancel();
+
+    m_getTask.spawn(
         getLink(),
         [cb = std::move(callback)](LinkResult res) {
             cb(std::move(res));
@@ -100,18 +119,7 @@ void LinkState::getLinkAsync(LinkCallback&& callback) {
 };
 
 LinkFuture LinkState::startLink() {
-    auto acc = *co_await async::waitForMainThread<Result<argon::AccountData>>([this]() -> Result<argon::AccountData> {
-        if (auto gjam = GJAccountManager::sharedState()) {
-            if (!argon::signedIn()) {
-                m_discordLinked = false;
-                return Err("User logged out");
-            };
-
-            return Ok(argon::getGameAccountData());
-        };
-
-        return Err("GJAccountManager not found");
-    });
+    auto acc = *co_await async::waitForMainThread<Result<argon::AccountData>>(verifyLogin);
 
     if (acc.isErr()) co_return Err(std::move(acc).unwrapErr());
     if (isLinked()) co_return getDiscord();
@@ -126,23 +134,42 @@ LinkFuture LinkState::startLink() {
     auto res = co_await argon::startAuth();
     if (res.isErr()) co_return Err(std::move(res).unwrapErr());
 
-    m_linkState = utils::random::generateUUID();
-    m_linkStart = asp::Instant::now();
+    std::string stateForUrl;
 
-    m_acc = std::move(acc).unwrap();
-    m_token = std::move(res).unwrap();
+    {
+        auto lock = m_attempt.lock();
 
-    web::openLinkInBrowser(fmt::format("https://api.cubicstudios.xyz/breakeode/v1/discord/link/auth?state={}", m_linkState));
+        lock->linkState = utils::random::generateUUID();
+        lock->linkStart = asp::Instant::now();
+        lock->acc = std::move(acc).unwrap();
+        lock->token = std::move(res).unwrap();
+        lock->linking = true;
+        stateForUrl = lock->linkState;
+    };
 
-    m_linking = true;
+    web::openLinkInBrowser(fmt::format("https://api.cubicstudios.xyz/breakeode/v1/discord/link/auth?state={}", stateForUrl));
 
     auto ok = false;
     while (!ok) {
-        if (m_linkState.empty()) {  // who knows lol
+        // take a quick snapshot under the lock, then release before checking/awaiting
+        std::string stateSnap, tokenSnap;
+        argon::AccountData accSnap;
+        asp::Instant startSnap;
+
+        {
+            auto lock = m_attempt.lock();
+
+            stateSnap = lock->linkState;
+            tokenSnap = lock->token;
+            accSnap = lock->acc;
+            startSnap = lock->linkStart;
+        };
+
+        if (stateSnap.empty()) {
             co_return Err("Invalid state");
-        } else if (m_token.empty() || !m_acc.valid()) {
+        } else if (tokenSnap.empty() || !accSnap.valid()) {
             co_return Err("Account login state invalid");
-        } else if (asp::Instant::now().durationSince(m_linkStart).seconds() > 20) {
+        } else if (asp::Instant::now().durationSince(startSnap).seconds() > 20) {
             co_return Err("Link flow timed out after 20 seconds");
         };
 
@@ -164,7 +191,9 @@ LinkFuture LinkState::startLink() {
 void LinkState::startLinkAsync(LinkCallback&& callback) {
     resetLinkProcess();
 
-    async::spawn(
+    m_startTask.cancel();
+
+    m_startTask.spawn(
         startLink(),
         [this, cb = std::move(callback)](LinkResult res) {
             cb(std::move(res));
@@ -172,15 +201,21 @@ void LinkState::startLinkAsync(LinkCallback&& callback) {
 };
 
 LinkFuture LinkState::checkLinkStatus() {
-    auto reqJson = matjson::Value();
-    reqJson["account_id"] = m_acc.accountId;
-    reqJson["user_id"] = m_acc.userId;
-    reqJson["username"] = m_acc.username;
-    reqJson["authtoken"] = m_token;
-    reqJson["mod"] = getReqMod();
-    reqJson["state"] = m_linkState;
+    matjson::Value reqJson;
 
-    auto req = baseRequest()
+    {
+        auto lock = m_attempt.lock();
+
+        reqJson["account_id"] = lock->acc.accountId;
+        reqJson["user_id"] = lock->acc.userId;
+        reqJson["username"] = lock->acc.username;
+        reqJson["authtoken"] = lock->token;
+        reqJson["state"] = lock->linkState;
+    }
+
+    reqJson["mod"] = getReqMod();
+
+    auto req = LinkState::baseRequest()
                    .bodyJSON(reqJson);
 
     auto res = co_await req.post("https://api.cubicstudios.xyz/breakeode/v1/discord/link/check");
@@ -207,37 +242,36 @@ LinkState::UnlinkFuture LinkState::unlink() {
     auto res = co_await argon::startAuth();
     if (res.isErr()) co_return Err(std::move(res).unwrapErr());
 
-    auto accRes = *co_await async::waitForMainThread<Result<argon::AccountData>>([this]() -> Result<argon::AccountData> {
-        if (auto gjam = GJAccountManager::sharedState()) {
-            if (!argon::signedIn()) {
-                m_discordLinked = false;
-                return Err("User logged out");
-            };
-
-            return Ok(argon::getGameAccountData());
-        };
-
-        return Err("GJAccountManager not found");
-    });
+    auto accRes = *co_await async::waitForMainThread<Result<argon::AccountData>>(verifyLogin);
     if (accRes.isErr()) co_return Err(std::move(accRes).unwrapErr());
 
     auto const acc = std::move(accRes).unwrap();
 
-    auto reqJson = matjson::Value();
+    std::string tokenSnap;
+    {
+        auto lock = m_attempt.lock();
+
+        tokenSnap = lock->token;
+    };
+
+    matjson::Value reqJson;
     reqJson["account_id"] = acc.accountId;
     reqJson["user_id"] = acc.userId;
     reqJson["username"] = acc.username;
-    reqJson["authtoken"] = m_token;
+    reqJson["authtoken"] = tokenSnap;
     reqJson["mod"] = getReqMod();
 
-    auto req = baseRequest()
-                   .bodyJSON(reqJson);
+    auto req = baseRequest().bodyJSON(reqJson);
 
     auto reqRes = co_await req.post("https://api.cubicstudios.xyz/breakeode/v1/discord/unlink");
     if (reqRes.error()) co_return Err(reqRes.errorMessage());
 
-    m_discord = DiscordLink();
-    m_discordLinked = false;
+    {
+        auto lock = m_discordLink.lock();
+
+        lock->discord = DiscordLink();
+        lock->linked = false;
+    };
 
     resetLinkProcess();
     co_return Ok();
@@ -246,7 +280,9 @@ LinkState::UnlinkFuture LinkState::unlink() {
 void LinkState::unlinkAsync(UnlinkCallback&& callback) {
     resetLinkProcess();
 
-    async::spawn(
+    m_unlinkTask.cancel();
+
+    m_unlinkTask.spawn(
         unlink(),
         [this, cb = std::move(callback)](UnlinkResult res) {
             cb(std::move(res));
@@ -254,11 +290,13 @@ void LinkState::unlinkAsync(UnlinkCallback&& callback) {
 };
 
 void LinkState::resetLinkProcess() {
-    m_linking = false;
+    auto lock = m_attempt.lock();
 
-    m_acc = argon::AccountData();
-    m_token.clear();
+    lock->linkState.clear();
+    lock->linkStart = asp::Instant();
 
-    m_linkState.clear();
-    m_linkStart = asp::Instant();
+    lock->acc = argon::AccountData();
+    lock->token.clear();
+
+    lock->linking = false;
 };

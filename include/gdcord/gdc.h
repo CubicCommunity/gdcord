@@ -43,12 +43,18 @@ namespace gdc {
     /// Get previously saved Discord account data, if any
     void getLinkAsync(LinkCallback&& callback);
     /// Start the Discord authorization flow for the user
-    /// @note Make sure you checked by calling `gdc::getLink` prior!
+    /// @note Make sure you checked by calling `gdc::getLinkAsync` prior!
     void startLinkAsync(LinkCallback&& callback);
 
+    /// Check if there's an ongoing link attempt
+    /// @warning Call only on main thread
     bool isLinkOngoing() noexcept;
+    /// Check if the player already linked their account
+    /// @warning Call only on main thread
     bool isLinked() noexcept;
 
+    /// Get the Discord account linked to the player's Geometry Dash account, if any
+    /// @warning Call only on main thread
     LinkResult getDiscordLink();
 };
 
