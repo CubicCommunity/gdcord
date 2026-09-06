@@ -82,9 +82,13 @@ LinkFuture LinkState::getLink() {
 
         return Err("GJAccountManager not found");
     });
-
     if (acc.isErr()) co_return Err(std::move(acc).unwrapErr());
-    if (isLinked()) co_return getDiscord();
+
+    auto linked = *co_await async::waitForMainThread<gdc::LinkResult>([this]() -> gdc::LinkResult {
+        if (isLinked()) return getDiscord();
+        return Err("Discord account linked");
+    });
+    if (linked.isOk()) co_return std::move(linked);
 
     auto accountID = std::move(acc).unwrap();
 
@@ -120,9 +124,13 @@ void LinkState::getLinkAsync(LinkCallback&& callback) {
 
 LinkFuture LinkState::startLink() {
     auto acc = *co_await async::waitForMainThread<Result<argon::AccountData>>(verifyLogin);
-
     if (acc.isErr()) co_return Err(std::move(acc).unwrapErr());
-    if (isLinked()) co_return getDiscord();
+
+    auto linked = *co_await async::waitForMainThread<gdc::LinkResult>([this]() -> gdc::LinkResult {
+        if (isLinked()) return getDiscord();
+        return Err("Discord account linked");
+    });
+    if (linked.isOk()) co_return std::move(linked);
 
     auto dcRes = co_await getLink();
 
@@ -144,6 +152,7 @@ LinkFuture LinkState::startLink() {
         lock->acc = std::move(acc).unwrap();
         lock->token = std::move(res).unwrap();
         lock->linking = true;
+
         stateForUrl = lock->linkState;
     };
 
@@ -211,7 +220,7 @@ LinkFuture LinkState::checkLinkStatus() {
         reqJson["username"] = lock->acc.username;
         reqJson["authtoken"] = lock->token;
         reqJson["state"] = lock->linkState;
-    }
+    };
 
     reqJson["mod"] = getReqMod();
 
