@@ -1,7 +1,10 @@
 # gdcord
 A low-level [Argon](https://github.com/GlobedGD/argon)-based library for Geode mods to verify linkage between Geometry Dash and Discord accounts.
 
-## Usage (Client)
+## Usage 
+You can use gdcord from the client or your server to fetch and verify Discord account information for your players.
+
+### Client
 First, be sure to include gdcord as a static dependency for your mod in your **`CMakeLists.txt`**, *after* the `setup_geode_mod` step.
 ```cmake
 CPMAddPackage("gh:CubicCommunity/gdcord@1.0.0")
@@ -43,7 +46,7 @@ gdc::getLinkAsync([](gdc::LinkResult res) {
 });
 ```
 
-### When to use `gdc::startLink`?
+#### When to use `gdc::startLink`?
 Since linking involves opening a new web page with the player being required to manually authorize their Discord account, calling **`gdc::startLink`** is *only recommended* when their account information is crucial for authorization or validation for your service.
 
 Granted, the authorization flow in `gdc::startLink` will not occur if the player already linked their account before, and the `gdc::LinkResult` object provided in the callback will contain that same previously saved data.
@@ -60,3 +63,17 @@ gdc::startLinkAsync([](gdc::LinkResult res) {
     // handle result here
 });
 ```
+
+#### Server
+To check a Geometry Dash user's linked Discord account, you only need one **`api.cubicstudios.xyz`** endpoint!
+> ### GET `/breakeode/v1/discord`
+> #### Query Parameters
+> - **`id`**: Account ID of the GD player
+> 
+> #### Response
+> - JSON object
+>   - **`id`**: Discord account ID snowflake
+>   - **`username`**: Discord username
+>   - **`avatar`**: Discord avatar URL (in `WEBP`)
+
+Authorization flows can only be started on the client side, so this endpoint is for your server to verify that the information being sent from the client is accurate to what is actually stored on our platform.
