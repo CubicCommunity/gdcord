@@ -29,13 +29,19 @@ $on_mod(Loaded) {
         gdc::getLink(),
         [](gdc::LinkResult res) {
             if (res.isErr()) {
-                log::warn("Failed to get linked Discord account: {}", res.unwrapErr());
+                log::warn("Failed to get linked Discord account: {}", std::move(res).unwrapErr());
                 return;
             };
 
             auto user = std::move(res).unwrap();
             log::info("Received linked Discord user: @{}", user.username);
         });
+};
+
+// or inside another coroutine
+arc::Future<> myTask() {
+    gdc::LinkResult res = co_await gdc::getLink();
+    // handle result here
 };
 ```
 
@@ -57,11 +63,12 @@ async::spawn(
     [](gdc::LinkResult res) {
         // handle result here
     });
-```
-```cpp
-auto res = co_await gdc::startLink();
-```
 
+arc::Future<> myTask() {
+    auto res = co_await gdc::startLink();
+    // handle result here
+};
+```
 ```cpp
 gdc::startLinkAsync([](gdc::LinkResult res) {
     // handle result here
