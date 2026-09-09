@@ -65,6 +65,16 @@ void gdc::startLinkAsync(gdc::LinkCallback&& cb) {
     return cb(Err("Auth state not found"));
 };
 
+gdc::UnlinkFuture gdc::unlink() {
+    if (auto ls = LinkState::get()) co_return ls->unlink().getOutput();
+    co_return Err("Auth state not found");
+};
+
+void gdc::unlinkAsync(gdc::UnlinkCallback&& cb) {
+    if (auto ls = gdc::LinkState::get()) return ls->unlinkAsync(std::move(cb));
+    return cb(Err("Auth state not found"));
+};
+
 std::string gdc::DiscordLink::getAvatarInFormat(gdc::DiscordImgFmt format, bool animated) const {
     std::string ext;
     ext.reserve(4);

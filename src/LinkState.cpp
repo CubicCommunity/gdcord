@@ -6,8 +6,8 @@
 
 #include <arc/time/Sleep.hpp>
 
-using namespace gdc;
 using namespace geode::prelude;
+using namespace gdc;
 
 web::WebRequest LinkState::baseRequest() {
     return web::WebRequest()
@@ -24,7 +24,7 @@ std::string LinkState::getUserAgent() {  // thx argon owo
             loader->getGameVersion());
     };
 
-    return "";
+    return "gdcord/v1";
 };
 
 std::string LinkState::getReqMod() {
@@ -142,7 +142,7 @@ LinkFuture LinkState::startLink() {
     auto res = co_await argon::startAuth();
     if (res.isErr()) co_return Err(std::move(res).unwrapErr());
 
-    std::string stateForUrl;
+    std::string urlState;
 
     {
         auto lock = m_attempt.lock();
@@ -153,14 +153,12 @@ LinkFuture LinkState::startLink() {
         lock->token = std::move(res).unwrap();
         lock->linking = true;
 
-        stateForUrl = lock->linkState;
+        urlState = lock->linkState;
     };
 
-    web::openLinkInBrowser(fmt::format("https://api.cubicstudios.xyz/breakeode/v1/discord/link/auth?state={}", stateForUrl));
+    web::openLinkInBrowser(fmt::format("https://api.cubicstudios.xyz/breakeode/v1/discord/link/auth?state={}", urlState));
 
-    auto ok = false;
-    while (!ok) {
-        // take a quick snapshot under the lock, then release before checking/awaiting
+    while (true) {
         std::string stateSnap, tokenSnap;
         argon::AccountData accSnap;
         asp::Instant startSnap;
@@ -190,11 +188,11 @@ LinkFuture LinkState::startLink() {
             continue;
         };
 
+        log::info("(gdcord) Successfully authorized and linked Discord account {}", dRes.unwrap().username);
+
         resetLinkProcess();
         co_return std::move(dRes);
     };
-
-    co_return Err("Unknown error");
 };
 
 void LinkState::startLinkAsync(LinkCallback&& callback) {
@@ -247,7 +245,7 @@ LinkFuture LinkState::checkLinkStatus() {
     co_return std::move(discordRes);
 };
 
-LinkState::UnlinkFuture LinkState::unlink() {
+UnlinkFuture LinkState::unlink() {
     auto res = co_await argon::startAuth();
     if (res.isErr()) co_return Err(std::move(res).unwrapErr());
 
@@ -281,6 +279,8 @@ LinkState::UnlinkFuture LinkState::unlink() {
         lock->discord = DiscordLink();
         lock->linked = false;
     };
+
+    log::info("(gdcord) Successfully unlinked Discord account");
 
     resetLinkProcess();
     co_return Ok();

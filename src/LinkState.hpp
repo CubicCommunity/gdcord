@@ -8,10 +8,6 @@
 
 namespace gdc {
     class LinkState final : public base::Singleton<LinkState> {
-        using UnlinkResult = geode::Result<>;
-        using UnlinkCallback = geode::CopyableFunction<void(UnlinkResult)>;
-        using UnlinkFuture = arc::Future<UnlinkResult>;
-
         struct DiscordLinkInfo final {
             DiscordLink discord;
             bool linked = false;

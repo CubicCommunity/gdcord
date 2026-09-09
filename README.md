@@ -59,21 +59,67 @@ async::spawn(
     });
 ```
 ```cpp
+auto res = co_await gdc::startLink();
+```
+
+```cpp
 gdc::startLinkAsync([](gdc::LinkResult res) {
     // handle result here
 });
 ```
 
 #### Server
-To check a Geometry Dash user's linked Discord account, you only need one **`api.cubicstudios.xyz`** endpoint!
+To check a Geometry Dash user's linked Discord account, you can check via a **`api.cubicstudios.xyz`** endpoint.
 > ### GET `/breakeode/v1/discord`
+> Look up a Discord account linked to a GD account using a GD player's account ID, if any
+> 
 > #### Query Parameters
 > - **`id`**: Account ID of the GD player
 > 
 > #### Response
 > - JSON object
->   - **`id`**: Discord account ID snowflake
->   - **`username`**: Discord username
->   - **`avatar`**: Discord avatar URL (in `WEBP`)
+>   - `string` | **`id`**: Discord user ID snowflake
+>   - `string` | **`username`**: Discord username
+>   - `string` | **`avatar`**: Discord avatar URL (in `WEBP`)
+>   - `int` | **`gd`**: Geometry Dash account ID
+> 
+> ### GET `/breakeode/v1/discord-many`
+> Look up Discord accounts linked to GD accounts using a list of GD players' account IDs
+> 
+> #### Query Parameters
+> - **`id`**: GD players' account IDs, separated by comma
+> 
+> #### Response
+> - Array of JSON objects
+>   - `string` | **`id`**: Discord user ID snowflake
+>   - `string` | **`username`**: Discord username
+>   - `string` | **`avatar`**: Discord avatar URL (in `WEBP`)
+>   - `int` | **`gd`**: Geometry Dash account ID
+
+> ### GET `/breakeode/v1/discord/gd`
+> Look up a Discord account linked to a GD account using a Discord ID snowflake, if any
+> 
+> #### Query Parameters
+> - **`id`**: ID snowflake of the Discord user
+> 
+> #### Response
+> - JSON object
+>   - `string` | **`id`**: Discord user ID snowflake
+>   - `string` | **`username`**: Discord username
+>   - `string` | **`avatar`**: Discord avatar URL (in `WEBP`)
+>   - `int` | **`gd`**: Geometry Dash account ID
+> 
+> ### GET `/breakeode/v1/discord/gd-many`
+> Look up Discord accounts linked to GD accounts using a list of Discord user ID snowflakes
+> 
+> #### Query Parameters
+> - **`id`**: Discord user ID snowflakes, separated by comma
+> 
+> #### Response
+> - Array of JSON objects
+>   - `string` | **`id`**: Discord user ID snowflake
+>   - `string` | **`username`**: Discord username
+>   - `string` | **`avatar`**: Discord avatar URL (in `WEBP`)
+>   - `int` | **`gd`**: Geometry Dash account ID
 
 Authorization flows can only be started on the client side, so this endpoint is for your server to verify that the information being sent from the client is accurate to what is actually stored on our platform.

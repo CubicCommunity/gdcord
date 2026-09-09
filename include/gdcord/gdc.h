@@ -30,7 +30,6 @@ namespace gdc {
     };
 
     using LinkResult = geode::Result<DiscordLink>;
-
     using LinkFuture = arc::Future<LinkResult>;
 
     /// Get previously saved Discord account data, if any
@@ -40,6 +39,7 @@ namespace gdc {
     LinkFuture startLink();
 
     using LinkCallback = geode::CopyableFunction<void(LinkResult)>;
+
     /// Get previously saved Discord account data, if any
     void getLinkAsync(LinkCallback&& callback);
     /// Start the Discord authorization flow for the user
@@ -56,6 +56,17 @@ namespace gdc {
     /// Get the Discord account linked to the player's Geometry Dash account, if any
     /// @warning Call only on main thread
     LinkResult getDiscordLink();
+
+    using UnlinkResult = geode::Result<>;
+    using UnlinkFuture = arc::Future<UnlinkResult>;
+
+    /// Remove the Discord link from the current user's account
+    UnlinkFuture unlink();
+
+    using UnlinkCallback = geode::CopyableFunction<void(UnlinkResult)>;
+
+    /// Remove the Discord link from the current user's account
+    void unlinkAsync(UnlinkCallback&& callback);
 };
 
 template <>
