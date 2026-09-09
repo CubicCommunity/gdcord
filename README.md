@@ -1,5 +1,5 @@
 # gdcord
-A low-level [Argon](https://github.com/GlobedGD/argon)-based library for Geode mods to verify linkage between Geometry Dash and Discord accounts.
+A small, low-level [Argon](https://github.com/GlobedGD/argon)-based library for Geode mods to verify links between Geometry Dash and Discord accounts.
 
 ## Usage 
 You can use gdcord from the client or your server to fetch and verify Discord account information for your players.
@@ -7,7 +7,7 @@ You can use gdcord from the client or your server to fetch and verify Discord ac
 ### Client
 First, be sure to include gdcord as a static dependency for your mod in your **`CMakeLists.txt`**, *after* the `setup_geode_mod` step.
 ```cmake
-CPMAddPackage("gh:CubicCommunity/gdcord@1.0.0")
+CPMAddPackage("gh:CubicCommunity/gdcord@1.1.0")
 target_link_libraries(${PROJECT_NAME} gdcord)
 ```
 
