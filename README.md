@@ -65,7 +65,7 @@ async::spawn(
     });
 
 arc::Future<> myTask() {
-    auto res = co_await gdc::startLink();
+    gdc::LinkResult res = co_await gdc::startLink();
     // handle result here
 };
 ```
