@@ -29,7 +29,7 @@ $on_mod(Loaded) {
         gdc::getLink(),
         [](gdc::LinkResult res) {
             if (res.isErr()) {
-                log::warn("Failed to get linked Discord account: {}", std::move(res).unwrapErr());
+                log::warn("Failed to get linked Discord account: {}", res.unwrapErr());
                 return;
             };
 
