@@ -68,7 +68,7 @@ gdc::startLinkAsync([](gdc::LinkResult res) {
 });
 ```
 
-#### Server
+### Server
 To check a Geometry Dash user's linked Discord account, you can check via a **`api.cubicstudios.xyz`** endpoint.
 > ### GET `/breakeode/v1/discord`
 > Look up a Discord account linked to a GD account using a GD player's account ID, if any
