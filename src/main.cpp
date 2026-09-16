@@ -43,7 +43,7 @@ gdc::LinkResult gdc::getDiscordLink() {
 };
 
 gdc::LinkFuture gdc::getLink() {
-    co_return gdc::LinkState::get()->getLink().getOutput();
+    co_return co_await gdc::LinkState::get()->getLink();
 };
 
 void gdc::getLinkAsync(gdc::LinkCallback&& cb) {
@@ -51,7 +51,7 @@ void gdc::getLinkAsync(gdc::LinkCallback&& cb) {
 };
 
 gdc::LinkFuture gdc::startLink() {
-    co_return gdc::LinkState::get()->startLink().getOutput();
+    co_return co_await gdc::LinkState::get()->startLink();
 };
 
 void gdc::startLinkAsync(gdc::LinkCallback&& cb) {
@@ -59,7 +59,7 @@ void gdc::startLinkAsync(gdc::LinkCallback&& cb) {
 };
 
 gdc::UnlinkFuture gdc::unlink() {
-    co_return gdc::LinkState::get()->unlink().getOutput();
+    co_return co_await gdc::LinkState::get()->unlink();
 };
 
 void gdc::unlinkAsync(gdc::UnlinkCallback&& cb) {
