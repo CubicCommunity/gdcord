@@ -70,24 +70,28 @@ bool LinkState::isLinked() const noexcept {
 };
 
 LinkFuture LinkState::getLink() {
-    auto acc = *co_await async::waitForMainThread<Result<int>>([this]() -> Result<int> {
+    auto accMain = co_await async::waitForMainThread<Result<int>>([this]() -> Result<int> {
         if (auto gjam = GJAccountManager::sharedState()) {
             if (!argon::signedIn()) {
                 m_discordLink.lock()->linked = false;
                 return Err("User logged out");
             };
-
             return Ok(gjam->m_accountID);
         };
-
         return Err("GJAccountManager not found");
     });
+    if (!accMain.has_value()) co_return Err("No result from main thread call");
+
+    auto acc = std::move(accMain).value();
     if (acc.isErr()) co_return Err(std::move(acc).unwrapErr());
 
-    auto linked = *co_await async::waitForMainThread<gdc::LinkResult>([this]() -> gdc::LinkResult {
+    auto linkedMain = co_await async::waitForMainThread<gdc::LinkResult>([this]() -> gdc::LinkResult {
         if (isLinked()) return getDiscord();
         return Err("Discord account linked");
     });
+    if (!linkedMain.has_value()) co_return Err("No result from main thread call");
+
+    auto linked = std::move(linkedMain).value();
     if (linked.isOk()) co_return std::move(linked);
 
     auto accountID = std::move(acc).unwrap();
@@ -123,13 +127,19 @@ void LinkState::getLinkAsync(LinkCallback&& callback) {
 };
 
 LinkFuture LinkState::startLink() {
-    auto acc = *co_await async::waitForMainThread<Result<argon::AccountData>>(verifyLogin);
+    auto accOuter = co_await async::waitForMainThread<Result<argon::AccountData>>(verifyLogin);
+    if (!accOuter.has_value()) co_return Err("No result from main thread call");
+
+    auto acc = std::move(accOuter).value();
     if (acc.isErr()) co_return Err(std::move(acc).unwrapErr());
 
-    auto linked = *co_await async::waitForMainThread<gdc::LinkResult>([this]() -> gdc::LinkResult {
+    auto linkedMain = co_await async::waitForMainThread<gdc::LinkResult>([this]() -> gdc::LinkResult {
         if (isLinked()) return getDiscord();
         return Err("Discord account linked");
     });
+    if (!linkedMain.has_value()) co_return Err("No result from main thread call");
+
+    auto linked = std::move(linkedMain).value();
     if (linked.isOk()) co_return std::move(linked);
 
     auto dcRes = co_await getLink();
@@ -249,7 +259,10 @@ UnlinkFuture LinkState::unlink() {
     auto res = co_await argon::startAuth();
     if (res.isErr()) co_return Err(std::move(res).unwrapErr());
 
-    auto accRes = *co_await async::waitForMainThread<Result<argon::AccountData>>(verifyLogin);
+    auto accResOuter = co_await async::waitForMainThread<Result<argon::AccountData>>(verifyLogin);
+    if (!accResOuter.has_value()) co_return Err("No result from main thread call");
+
+    auto accRes = std::move(accResOuter).value();
     if (accRes.isErr()) co_return Err(std::move(accRes).unwrapErr());
 
     auto const acc = std::move(accRes).unwrap();
