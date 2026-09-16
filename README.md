@@ -94,7 +94,7 @@ To check a Geometry Dash user's linked Discord account, you can check via a **`a
 > Look up Discord accounts linked to GD accounts using a list of GD players' account IDs
 > 
 > #### Query Parameters
-> - **`id`**: GD players' account IDs, separated by comma
+> - **`ids`**: GD players' account IDs, separated by comma
 > 
 > #### Response
 > - Array of JSON objects
@@ -120,7 +120,7 @@ To check a Geometry Dash user's linked Discord account, you can check via a **`a
 > Look up Discord accounts linked to GD accounts using a list of Discord user ID snowflakes
 > 
 > #### Query Parameters
-> - **`id`**: Discord user ID snowflakes, separated by comma
+> - **`ids`**: Discord user ID snowflakes, separated by comma
 > 
 > #### Response
 > - Array of JSON objects
