@@ -76,8 +76,10 @@ LinkFuture LinkState::getLink() {
                 m_discordLink.lock()->linked = false;
                 return Err("User logged out");
             };
+
             return Ok(gjam->m_accountID);
         };
+
         return Err("GJAccountManager not found");
     });
     if (!accMain.has_value()) co_return Err("No GD account data result from main thread call");

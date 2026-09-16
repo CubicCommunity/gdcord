@@ -31,48 +31,39 @@ matjson::Value matjson::Serialize<gdc::DiscordLink>::toJson(gdc::DiscordLink con
 };
 
 bool gdc::isLinkOngoing() noexcept {
-    if (auto ls = gdc::LinkState::get()) return ls->isLinkOngoing();
-    return false;
+    return gdc::LinkState::get()->isLinkOngoing();
 };
 
 bool gdc::isLinked() noexcept {
-    if (auto ls = gdc::LinkState::get()) return ls->isLinked();
-    return false;
+    return gdc::LinkState::get()->isLinked();
 };
 
 gdc::LinkResult gdc::getDiscordLink() {
-    if (auto ls = gdc::LinkState::get()) return ls->getDiscord();
-    return Err("Auth state not found");
+    return gdc::LinkState::get()->getDiscord();
 };
 
 gdc::LinkFuture gdc::getLink() {
-    if (auto ls = LinkState::get()) co_return ls->getLink().getOutput();
-    co_return Err("Auth state not found");
+    co_return gdc::LinkState::get()->getLink().getOutput();
 };
 
 void gdc::getLinkAsync(gdc::LinkCallback&& cb) {
-    if (auto ls = gdc::LinkState::get()) return ls->getLinkAsync(std::move(cb));
-    return cb(Err("Auth state not found"));
+    return gdc::LinkState::get()->getLinkAsync(std::move(cb));
 };
 
 gdc::LinkFuture gdc::startLink() {
-    if (auto ls = LinkState::get()) co_return ls->startLink().getOutput();
-    co_return Err("Auth state not found");
+    co_return gdc::LinkState::get()->startLink().getOutput();
 };
 
 void gdc::startLinkAsync(gdc::LinkCallback&& cb) {
-    if (auto ls = gdc::LinkState::get()) return ls->startLinkAsync(std::move(cb));
-    return cb(Err("Auth state not found"));
+    return gdc::LinkState::get()->startLinkAsync(std::move(cb));
 };
 
 gdc::UnlinkFuture gdc::unlink() {
-    if (auto ls = LinkState::get()) co_return ls->unlink().getOutput();
-    co_return Err("Auth state not found");
+    co_return gdc::LinkState::get()->unlink().getOutput();
 };
 
 void gdc::unlinkAsync(gdc::UnlinkCallback&& cb) {
-    if (auto ls = gdc::LinkState::get()) return ls->unlinkAsync(std::move(cb));
-    return cb(Err("Auth state not found"));
+    return gdc::LinkState::get()->unlinkAsync(std::move(cb));
 };
 
 std::string gdc::DiscordLink::getAvatarInFormat(gdc::DiscordImgFmt format, bool animated) const {
